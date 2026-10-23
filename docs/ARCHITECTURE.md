@@ -121,7 +121,8 @@ enabled=false ──► disabled（不参与调度）
 | 边界 | 说明 |
 | --- | --- |
 | **非 token 级流式** | 上游正文整段到达（`working.current.turn.content.text` 实测恒为空）。`stream:true` 的切块是**表现层模拟**，`finish_reason` 与内容本身与上游一致。 |
-| **模型不可选** | CN 版没有档位接口。`/v1/models` 只暴露三个**会话语义**别名，不伪造假模型。 |
+| **模型不可切换** | CN 版没有切换接口（`GET/POST /v1/pricing/model-option` 均 404）。`/v1/models` 只暴露三个**会话语义**别名，不伪造假模型。 |
+| **但模型可读** | `GET /v1/pricing/status` → `data.status.modelOptions.selectedOptionId` 能读到当前生效档位（实测 `model.deepseek-v4.1-flash`，倍率 1×；另一档 `model.glm-5.3` 倍率 4×）。服务端另有 `GET /v1/llm/models` 的 34 个模型内部池。详见 [REVERSE-ENGINEERING §3.5](REVERSE-ENGINEERING.md)。 |
 | **token 数是估算** | Today 不返回 usage。`usage` 字段是本地估算（CJK≈1 token/字，其余≈4 字符/token），不是计费依据。 |
 | **开新会话会留痕** | 新会话只能靠 `target:{type:'new_task'}'`，会在用户的 Tasks 里产生记录。`today-task` 模式每请求一条。 |
 | **无 `/v1/completions`、`/v1/embeddings`、`/v1/images/*`** | Today 的上游没有这些面（api-client 的 path 表里都没有），网关不假实现。 |

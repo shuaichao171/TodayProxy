@@ -140,7 +140,8 @@ npm test                                                   # 离线单测（23 �
 
 - 本项目只做**协议复刻与自用聚合**，不破解、不修改 Today 客户端；账号与计费仍由 Today 服务端裁决。
 - 上游**没有 token 级流式**：回答整段到达，`stream:true` 的切块是表现层模拟（见架构文档 §6）。
-- 上游**不接受客户端指定模型**，`/v1/models` 只暴露会话语义别名，不伪造模型列表。
+- 上游**不接受客户端指定模型**（切换接口在 CN 版返回 404）。`/v1/models` 只暴露会话语义别名，不伪造模型列表。
+- 但上游**用了什么模型是可读的**：`GET /v1/pricing/status` 的 `data.status.modelOptions.selectedOptionId` 会告诉你当前生效的档位（服务端另有 34 个模型的内部池，见 [逆向报告 §3.5](docs/REVERSE-ENGINEERING.md)）。
 - 用量里的 token 数是**本地估算**，不是 Today 的计费数据。
 - 未实现：`/v1/completions`、`/v1/embeddings`、`/v1/images/*`、语音（上游没有这些面）。
 - 请遵守 Today 的服务条款与当地法律法规；不要用于公开二次分发或商业转售。

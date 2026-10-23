@@ -212,6 +212,78 @@ api-client 的全部 path（`url:"…"`，共 100+ 条，节选）：
 /v3/live/conversations[/{id}/events]                   /v1/client/logs
 ```
 
+## 3.5 模型目录（服务端驱动）
+
+**客户端不能选模型，但服务端有完整模型池。** 两个可读接口：
+
+### `GET /v1/pricing/status` → `data.status.modelOptions`（无需 admin）
+
+```json
+{ "schemaVersion": 1,
+  "display": { "title": "Model", "tailNote": "Multipliers show relative quota usage across models for similar tasks." },
+  "selectedOptionId": "model.deepseek-v4.1-flash",
+  "options": [
+    { "id": "model.deepseek-v4.1-flash", "display": { "title": "DeepSeek V4.1 Flash", "subtitle": "Usage multiplier: 1×" } },
+    { "id": "model.glm-5.3",            "display": { "title": "GLM 5.3",             "subtitle": "Usage multiplier: 4×" } }
+  ] }
+```
+
+实测（本机账号）：**实际生效的是 `model.deepseek-v4.1-flash`，用量倍率 1×**；
+另一档 `model.glm-5.3` 倍率 4×（即同样任务消耗 4 倍额度）。
+这是唯一不需要 admin 就能读到「当前用哪个模型」的地方。
+
+### `GET /v1/llm/models` → 服务端模型池（34 个，无需 admin）
+
+```
+claude-haiku-4-5   claude-sonnet-4-6  claude-sonnet-5    claude-opus-5      claude-opus-4-6
+gpt-5.5            gpt-5.6-sol        gpt-5.6-terra      gpt-5.6-luna       gpt-6-astra
+gpt-6-astra-fast   grok-4.5           grok-4.6           deepseek-v4-flash  deepseek-v4.1-flash
+deepseek-v4-flash-0731  deepseek-v4-flash-vision-exp  deepseek-v4-pro  deepseek-v4-pro-0813
+kimi-k2.6          inkling-small      glm-5.1            glm-5.2            glm-5.3
+glm-5.3-flash      minimax-m3         qwen3.7-max        qwen3.7-plus       qwen3.6-flash
+qwen3.8-flash      doubao-seed-2.0-pro  doubao-seed-2.0-lite  doubao-seed-2.0-mini  mimo-v2.6-pro
+```
+
+用户可见的只有上面 `modelOptions.options` 里那 2 个；34 个是服务端内部池
+（含 Anthropic / OpenAI / xAI / DeepSeek / Moonshot / 智谱 / MiniMax / 阿里 / 字节 各家）。
+
+### 为什么不能通过网关切换模型
+
+| 接口 | 实测 |
+| --- | --- |
+| `GET /v1/pricing/model-option` | **404** |
+| `POST /v1/pricing/model-option` + `{optionId}` | **404** |
+| `GET /v3/live/model-options` | 403 `auth.forbidden`（实时语音档位，不适用） |
+| `GET /v1/admin/users/me/model-selections` | 403 `Admin access required` |
+| `PATCH /v1/admin/users/me/model-selections` | 需 admin（body `{chatModelId?, taskModelId?}`） |
+
+客户端 zod 里确实有 `zUpdatePricingModelOptionBody = {optionId: enum([...])}`，
+但那 5 个 id（`mode.fast/balanced/power` + 两个 `model.*`）只在**全局构建**的客户端枚举里，
+CN 服务端没有实现对应路由。所以**只能读、不能改** —— 结论与 §0 「客户端不能选具体模型」一致，
+但补充了「当前实际用哪个」是可读的。
+
+### 客户端文案里的档位（供对照）
+
+主进程 bundle `~line 31667758` 的 `zPricingModelOptions.options[].id` 枚举：
+
+```
+'mode.fast' | 'mode.balanced' | 'mode.power' | 'model.deepseek-v4.1-flash' | 'model.glm-5.3'
+```
+
+而 CN 服务端 `/v1/pricing/status` 只返回后两个 —— 即 `mode.*` 三档在 CN 上是死枚举。
+
+### 反面证据（防止误判）
+
+`prod.asar` 里 `deepseek` 命中 18 次、`anthropic` 209 次、`openai` 255 次，
+但全部是 **OpenTelemetry 语义约定常量**（`gen_ai.usage.input_tokens.cached`、
+`n.deepseek.promptCacheHitTokens`、`vercel.${e}` 等）与 provider 名表，
+**不是**任何 LLM 调用或 API key。真实的模型调用发生在 Today 云端。
+
+> 取证方法告誑：本机 GNU grep 3.0 在 UTF-8 locale 下 `grep -i` 会**漏匹配**
+> （`grep -aoiF deepseek` = 0，而 `grep -aoF deepseek` = 3，`grep -aoi DeepSeek` = 3）。
+> 凡涉及大小写无关的字符串普查，必须改用 node 逐字节 toLowerCase 计数（脚本见提交说明），
+> 否则会得出错的「不存在」结论。
+
 ## 4. 本机登录态（免登录导入）
 
 ### 4.1 文件布局
