@@ -1,0 +1,15 @@
+# TodayProxy 运行时数据
+data/
+output/
+*.log
+tmp/
+
+# 本机配置（含管理台密码）
+config/config.json
+
+# 逆向临时产物
+.recon/
+
+# 单测/临时目录
+data-test/
+tmp-*.json

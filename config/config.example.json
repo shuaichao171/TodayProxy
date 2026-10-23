@@ -1,0 +1,48 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8790,
+    "adminPassword": "",
+    "cors": true
+  },
+  "upstream": {
+    "apiBaseUrl": "https://api.todayai.cn",
+    "authBaseUrl": "https://auth.todayai.cn",
+    "webOrigin": "https://todayai.cn",
+    "appVersion": "1.22.7",
+    "clientPlatform": "windows",
+    "clientType": "windows-connector",
+    "platform": "win32",
+    "deviceName": "TodayProxy",
+    "connectTimeoutMs": 20000,
+    "connectRetries": 1,
+    "tokenSkewSeconds": 60,
+    "replyTimeoutMs": 180000,
+    "preferWebSocket": true,
+    "restPollIntervalMs": 1500,
+    "socketEnabled": true
+  },
+  "auth": {
+    "todayUserDataDir": "",
+    "userDataDirCandidates": ["Today CN", "Today", "Today CN Dev"]
+  },
+  "pool": {
+    "strategy": "round-robin",
+    "maxRetries": 1,
+    "cooldownSeconds": 60,
+    "sessionAffinity": true,
+    "conversationMode": "session",
+    "conversationTtlSeconds": 86400
+  },
+  "limits": {
+    "requestsPerMinutePerKey": 0
+  },
+  "stream": {
+    "simulate": true,
+    "chunkChars": 48,
+    "chunkDelayMs": 10
+  },
+  "log": {
+    "level": "info"
+  }
+}

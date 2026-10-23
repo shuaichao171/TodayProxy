@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TodayProxy 管理台</title>
+<style>
+  :root { color-scheme: light dark; --bg:#0f1115; --panel:#171a21; --line:#262b36; --fg:#e6e9ef; --muted:#9aa4b2; --accent:#4c9aff; --ok:#38b26a; --warn:#e0a83c; --bad:#e0574c; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.55 -apple-system,"Segoe UI",system-ui,"Microsoft YaHei",sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; font-weight:600; }
+  .muted { color:var(--muted); }
+  main { padding:20px; display:grid; gap:20px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  section h2 { font-size:14px; margin:0 0 12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:500; }
+  code,.mono { font-family:ui-monospace,Consolas,monospace; font-size:12px; word-break:break-all; }
+  button { font:inherit; padding:6px 11px; border-radius:7px; border:1px solid var(--line); background:#20242e; color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  input,select,textarea { font:inherit; padding:6px 8px; border-radius:7px; border:1px solid var(--line); background:#12151b; color:var(--fg); min-width:0; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .pill { padding:1px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); }
+  .pill.active { color:var(--ok); border-color:#2c5c41; }
+  .pill.cooling { color:var(--warn); border-color:#5c4a2c; }
+  .pill.invalid,.pill.disabled { color:var(--bad); border-color:#5c2f2c; }
+  pre { background:#0c0e12; border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; max-height:320px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13px; }
+  .kv div:nth-child(odd) { color:var(--muted); }
+  .login { max-width:420px; margin:20vh auto; }
+  .err { color:var(--bad); }
+  .ok { color:var(--ok); }
+</style>
+</head>
+<body>
+<header>
+  <h1>TodayProxy</h1>
+  <span class="muted" id="serving"></span>
+  <span style="flex:1"></span>
+  <input id="pw" type="password" placeholder="管理密码（未设置可留空）" />
+  <button onclick="savePw()">保存</button>
+  <button onclick="load()">刷新</button>
+</header>
+<main id="app" hidden>
+  <section>
+    <h2>概览</h2>
+    <div class="grid2">
+      <div class="kv" id="overview"></div>
+      <div class="kv" id="upstream"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button onclick="importLocal()">导入本机 Today 登录态</button>
+      <input id="probePrompt" placeholder="探针内容（留空用默认）" style="flex:1;min-width:200px" />
+      <button onclick="probe()">直连上游探针</button>
+    </div>
+    <pre id="probeOut" hidden></pre>
+  </section>
+
+  <section>
+    <h2>账号池 <span class="muted" id="accCount"></span></h2>
+    <table><thead><tr><th>ID</th><th>名称</th><th>状态</th><th>会话预览</th><th>设备</th><th>请求/失败</th><th></th></tr></thead><tbody id="accounts"></tbody></table>
+  </section>
+
+  <section>
+    <h2>下游密钥</h2>
+    <div class="row" style="margin-bottom:10px">
+      <input id="keyName" placeholder="名称" />
+      <input id="keyRpm" placeholder="RPM（可空）" style="width:110px" />
+      <button onclick="createKey()">新建密钥</button>
+    </div>
+    <pre id="newKey" hidden></pre>
+    <table><thead><tr><th>名称</th><th>前缀</th><th>RPM</th><th>请求</th><th>最后使用</th><th></th></tr></thead><tbody id="keys"></tbody></table>
+  </section>
+
+  <section>
+    <h2>用量</h2>
+    <table><thead><tr><th>模型</th><th>请求</th><th>成功</th><th>失败</th><th>估算输入</th><th>估算输出</th></tr></thead><tbody id="usage"></tbody></table>
+  </section>
+
+  <section>
+    <h2>长连接</h2>
+    <table><thead><tr><th>账号</th><th>状态</th><th>设备</th><th>session</th><th>seq</th><th>事件</th><th>重连</th></tr></thead><tbody id="sockets"></tbody></table>
+  </section>
+
+  <section>
+    <h2>会话映射</h2>
+    <div class="row" style="margin-bottom:10px"><button onclick="purgeSessions()">清理过期会话</button></div>
+    <table><thead><tr><th>key</th><th>Today 会话</th><th>轮次</th><th>更新时间</th><th></th></tr></thead><tbody id="sessions"></tbody></table>
+  </section>
+
+  <section>
+    <h2>日志</h2>
+    <pre id="logs" style="max-height:420px"></pre>
+  </section>
+</main>
+<div class="login err" id="loginMsg" hidden></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { password: localStorage.getItem('todayproxy.admin') ?? '' };
+
+function savePw() {
+  state.password = $('pw').value.trim();
+  localStorage.setItem('todayproxy.admin', state.password);
+  load();
+}
+
+async function api(path, options = {}) {
+  const headers = { ...(options.headers ?? {}) };
+  if (state.password) headers.authorization = `Bearer ${state.password}`;
+  if (options.body !== undefined) headers['content-type'] = 'application/json';
+  const res = await fetch(path, { ...options, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body) });
+  const text = await res.text();
+  let json = null;
+  try { json = text ? JSON.parse(text) : null; } catch {}
+  if (!res.ok) throw new Error(json?.error?.message || text || `HTTP ${res.status}`);
+  return json;
+}
+
+const fmtTime = (value) => (value ? new Date(value).toLocaleString() : '—');
+const fmtNum = (value) => (value === null || value === undefined ? '—' : String(value));
+
+function render(s) {
+  $('app').hidden = false;
+  $('loginMsg').hidden = true;
+  $('serving').textContent = `http://${s.server.host}:${s.server.port}  ·  v${s.server.version}`;
+  $('overview').innerHTML = [
+    ['账号', `${s.accounts.length}（可用 ${s.accounts.filter((a) => a.status === 'active').length}）`],
+    ['密钥', String(s.keys.length)],
+    ['模型', s.models.map((m) => m.id).join(', ')],
+    ['会话模式', s.pool.conversationMode + ' / ' + s.pool.strategy],
+  ].map(([k, v]) => `<div>${k}</div><div class="mono">${v}</div>`).join('');
+  $('upstream').innerHTML = [
+    ['上游', s.upstream.apiBaseUrl],
+    ['账号服务', s.upstream.authBaseUrl],
+    ['客户端版本', s.upstream.appVersion],
+    ['设备名', s.upstream.deviceName + ' / ' + (s.upstream.socketEnabled ? '长连接开' : '长连接关')],
+  ].map(([k, v]) => `<div>${k}</div><div class="mono">${v}</div>`).join('');
+
+  $('accCount').textContent = `(${s.accounts.length})`;
+  $('accounts').innerHTML = s.accounts.map((a) => `
+    <tr>
+      <td class="mono">${a.id}</td>
+      <td>${a.name ?? '—'}<div class="muted mono">${a.userId ?? ''}</div></td>
+      <td><span class="pill ${a.status}">${a.status}</span>${a.invalidReason ? `<div class="muted">${a.invalidReason}</div>` : ''}</td>
+      <td class="mono">${a.sessionTokenPreview}</td>
+      <td class="mono">${a.deviceId ?? '—'}</td>
+      <td class="mono">${a.requests} / ${a.failures}</td>
+      <td class="row">
+        <button onclick="checkAccount('${a.id}')">校验</button>
+        <button onclick="toggleAccount('${a.id}', ${a.enabled ? 'false' : 'true'})">${a.enabled ? '停用' : '启用'}</button>
+        <button onclick="removeAccount('${a.id}')">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="muted">还没有账号，点上面的「导入本机 Today 登录态」</td></tr>';
+
+  $('keys').innerHTML = s.keys.map((k) => `
+    <tr>
+      <td>${k.name}</td><td class="mono">${k.prefix}…</td>
+      <td class="mono">${fmtNum(k.rpm)}</td><td class="mono">${k.requests}</td>
+      <td class="muted">${fmtTime(k.lastUsedAt)}</td>
+      <td><button onclick="removeKey('${k.id}')">删除</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="muted">还没有密钥</td></tr>';
+
+  $('usage').innerHTML = Object.entries(s.usage.totals).map(([model, t]) => `
+    <tr><td>${model}</td><td class="mono">${t.requests}</td><td class="mono">${t.ok}</td>
+    <td class="mono">${t.failed}</td><td class="mono">${t.promptTokens}</td><td class="mono">${t.completionTokens}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="muted">还没有请求</td></tr>';
+
+  $('sockets').innerHTML = (s.sockets ?? []).map((k) => `
+    <tr><td class="mono">${k.accountId}</td><td class="pill ${k.status === 'connected' ? 'active' : k.status}">${k.status}</td>
+    <td class="mono">${k.deviceId ?? '—'}</td><td class="mono">${(k.sessionId ?? '—').slice(0, 8)}</td>
+    <td class="mono">${k.lastSeq}</td><td class="mono">${k.events}</td><td class="mono">${k.reconnects}</td></tr>`).join('')
+    || '<tr><td colspan="7" class="muted">没有活跃长连接</td></tr>';
+
+  $('sessions').innerHTML = s.sessions.map((x) => `
+    <tr><td class="mono">${x.key.slice(0, 22)}…</td><td class="mono">${x.conversationId}</td>
+    <td class="mono">${x.turnCount}</td><td class="muted">${fmtTime(x.updatedAt)}</td>
+    <td><button onclick="dropSession('${x.key}')">删除</button></td></tr>`).join('')
+    || '<tr><td colspan="5" class="muted">还没有映射</td></tr>';
+}
+
+async function load() {
+  try {
+    const s = await api('/admin/api/state');
+    render(s);
+    const logs = await api('/admin/api/logs');
+    $('logs').textContent = logs.items.slice().reverse().map((x) => JSON.stringify(x)).join('\n') || '（空）';
+  } catch (error) {
+    $('app').hidden = true;
+    $('loginMsg').hidden = false;
+    $('loginMsg').textContent = error.message;
+  }
+}
+
+async function importLocal() {
+  try { alert('导入成功：\n' + JSON.stringify(await api('/admin/api/accounts/import-local', { method: 'POST' }), null, 2)); } catch (e) { alert(e.message); }
+  load();
+}
+async function checkAccount(id) {
+  try { alert('校验成功：\n' + JSON.stringify(await api(`/admin/api/accounts/${id}/check`, { method: 'POST' }), null, 2)); } catch (e) { alert(e.message); }
+  load();
+}
+async function toggleAccount(id, enabled) { await api(`/admin/api/accounts/${id}`, { method: 'PATCH', body: { enabled } }); load(); }
+async function removeAccount(id) { if (!confirm('删除账号？')) return; await api(`/admin/api/accounts/${id}`, { method: 'DELETE' }); load(); }
+async function createKey() {
+  try {
+    const out = await api('/admin/api/keys', { method: 'POST', body: { name: $('keyName').value || undefined, rpm: $('keyRpm').value || undefined } });
+    $('newKey').hidden = false;
+    $('newKey').textContent = '密钥（只显示这一次）：\n' + out.secret;
+  } catch (e) { alert(e.message); }
+  load();
+}
+async function removeKey(id) { if (!confirm('删除密钥？')) return; await api(`/admin/api/keys/${id}`, { method: 'DELETE' }); load(); }
+async function purgeSessions() { await api('/admin/api/sessions/purge', { method: 'POST' }); load(); }
+async function dropSession(key) { await api(`/admin/api/sessions/${encodeURIComponent(key)}`, { method: 'DELETE' }); load(); }
+async function probe() {
+  $('probeOut').hidden = false;
+  $('probeOut').textContent = '请求中…';
+  try {
+    $('probeOut').textContent = JSON.stringify(await api('/admin/api/upstream/probe', { method: 'POST', body: { prompt: $('probePrompt').value || undefined } }), null, 2);
+  } catch (e) { $('probeOut').textContent = '失败：' + e.message; }
+  load();
+}
+
+$('pw').value = state.password;
+load();
+setInterval(() => { if (!$('app').hidden && !$('pw').matches(':focus')) load(); }, 15000);
+</script>
+</body>
+</html>

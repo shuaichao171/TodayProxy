@@ -1,0 +1,36 @@
+{
+  "name": "today-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Today（todayai.cn）反代网关：把 Today 桌面端账号池暴露成 OpenAI / Anthropic 兼容 API",
+  "license": "MIT",
+  "keywords": [
+    "today",
+    "todayai",
+    "reverse-proxy",
+    "openai-compatible",
+    "anthropic-compatible",
+    "gateway",
+    "xiaoya"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "today-proxy": "src/cli.js"
+  },
+  "files": [
+    "src",
+    "config/config.example.json",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node src/cli.js serve",
+    "doctor": "node src/cli.js doctor",
+    "import-local": "node src/cli.js import-local",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}
