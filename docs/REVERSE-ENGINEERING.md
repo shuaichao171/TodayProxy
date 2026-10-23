@@ -1,6 +1,7 @@
 # Today（todayai.cn）逆向分析报告
 
-> 目标：`E:\Today CN`（Today CN Desktop 1.22.7，TODAY AI PTE. LTD.，Electron 43 + 内嵌 Next.js）
+> 目标：Today CN Desktop 1.22.7（TODAY AI PTE. LTD.，Electron 43 + 内嵌 Next.js）。
+> 下文用 `<Today>` 代指其本机安装目录。
 > 目的：取得上游「对话/Agent」协议与鉴权细节，据此实现 OpenAI / Anthropic 兼容反代网关。
 > 分析日期：2026-10。下文每条结论都标注了「静态坐标」或「实测坐标」，两者可交叉复算。
 > REA 取证坐标（产物 SHA-256 / evidence id）见 [`REA-EVIDENCE.md`](REA-EVIDENCE.md)。
@@ -23,7 +24,7 @@
 ## 1. 产物结构与取证
 
 ```
-E:\Today CN\
+<Today>\
 ├─ TodayCN.exe                      # Electron 主程序（225 MB，PE，sha256 2e2a91a5…）
 ├─ resources\
 │  ├─ app.asar                      # 38 MB，1878 个文件；主进程业务代码
@@ -239,7 +240,7 @@ slot 文件:      "v10" | nonce(12) | ciphertext | tag(16)
  record:{ environment:'prod', source:'better-auth-session',
           accessToken:'eyJhbGciOiJFUzI1NiIs…', accessTokenExpiresAt:1792769113548,
           refreshCredential:'<32 位 better-auth session>',
-          user:{id:'EC1q…', avatarUrl:'https://assets.todayai.cn/…'},
+          user:{id:'<userId>', avatarUrl:'https://assets.todayai.cn/…'},
           schemaVersion:2 }}
 ```
 

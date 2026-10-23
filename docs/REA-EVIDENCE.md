@@ -5,11 +5,14 @@ evidence bundle 放进仓库。需要完整 bundle 时按 §5 的命令重新导
 
 ## 1. 被分析产物
 
+> 下表用 `<Today>` 代指 Today 客户端的本机安装目录（默认 `%LOCALAPPDATA%\Programs\Today CN`
+> 或用户指定位置）。表的 SHA-256 足以唯一标识产物，无需依赖具体路径。
+
 | 产物 | SHA-256 | 说明 |
 | --- | --- | --- |
-| `E:\Today CN\TodayCN.exe` | `2e2a91a55bcd595d8e05f682f9695058ca9b755c9e9a827526a5e4434e20c4c0` | Electron 主程序（225 501 448 字节，PE） |
-| `E:\Today CN\resources\app.asar` | `65da6e187bdc1ae094eb6144b63b9dcdf448748a27f502d7ef0c052035452d30` | 应用包（38 378 183 字节，1878 个文件） |
-| `E:\Today CN\resources\web-runtimes\prod.asar` | `396993faaf9972079ef3c70a0afb81351d35ad1ab98a873ac1d587f242a2b893` | 内嵌 Next.js 运行时（60 992 301 字节） |
+| `<Today>\TodayCN.exe` | `2e2a91a55bcd595d8e05f682f9695058ca9b755c9e9a827526a5e4434e20c4c0` | Electron 主程序（225 501 448 字节，PE） |
+| `<Today>\resources\app.asar` | `65da6e187bdc1ae094eb6144b63b9dcdf448748a27f502d7ef0c052035452d30` | 应用包（38 378 183 字节，1878 个文件） |
+| `<Today>\resources\web-runtimes\prod.asar` | `396993faaf9972079ef3c70a0afb81351d35ad1ab98a873ac1d587f242a2b893` | 内嵌 Next.js 运行时（60 992 301 字节） |
 
 补充事实（不依赖 REA，可自行核对）：
 
@@ -46,7 +49,7 @@ REA 给出的 runtime implications：`embedded_asar_integrity_validation → not
 ### 3.1 主进程（app.asar）
 
 工具：`rea_analyze_javascript_application`
-`input_path=E:\Today CN\resources\app.asar`，`integrity_policy=record-and-continue`
+`input_path=<Today>\resources\app.asar`，`integrity_policy=record-and-continue`
 
 | 证据 | 用途 | 统计 |
 | --- | --- | --- |
@@ -69,7 +72,7 @@ REA 统计到的 Electron 面：`context_bridge_apis=1`、`ipc.operations=3`（�
 
 ### 3.2 内嵌 Next.js 运行时（prod.asar）
 
-工具同上，`input_path=E:\Today CN\resources\web-runtimes\prod.asar`
+工具同上，`input_path=<Today>\resources\web-runtimes\prod.asar`
 
 | 证据 | 用途 | 统计 |
 | --- | --- | --- |
@@ -122,12 +125,12 @@ REA 的 `request` 家族保留关系与手工阅读得到的 4 个网络面一�
 
 ```bash
 # 在 REA 会话中
-rea_inspect_electron_fuses               path="E:\Today CN\TodayCN.exe"
-rea_analyze_javascript_application       input_path="E:\Today CN\resources\app.asar" \
+rea_inspect_electron_fuses               path="<Today>\TodayCN.exe"
+rea_analyze_javascript_application       input_path="<Today>\resources\app.asar" \
   integrity_policy=record-and-continue \
   source_paths=[dist/app/app/index.js, dist/preload/desktop.cjs, dist/app/consts/account.js, \
                 dist/app/consts/cloud-public-config.mjs, dist/app/utils/index.js] detail=summary
-rea_analyze_javascript_application       input_path="E:\Today CN\resources\web-runtimes\prod.asar" \
+rea_analyze_javascript_application       input_path="<Today>\resources\web-runtimes\prod.asar" \
   integrity_policy=record-and-continue \
   source_paths=[apps/web/.next/server/chunks/ssr/packages_api-client_src_17q6z9q._.js, …] detail=summary
 rea_export_evidence_bundle               path=<临时目录>\today-evidence.json

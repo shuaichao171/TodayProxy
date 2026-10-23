@@ -22,7 +22,7 @@
 ## 快速开始
 
 ```bash
-cd E:/ai-work2/TodayProxy
+cd TodayProxy
 
 # 1. 环境自检（找 Today 用户数据目录、解密凭据、验证上游连通性）
 node src/cli.js doctor

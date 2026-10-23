@@ -13,7 +13,7 @@ TodayProxy 是一个**自托管 AI 网关**：上游是 Today（todayai.cn「小
 | [songquanpeng/one-api](https://github.com/songquanpeng/one-api)、[QuantumNous/new-api](https://github.com/QuantumNous/new-api) | 渠道/令牌/用量/日志四件套；统一 OpenAI 兼容面；上游凭据只存服务端 |
 | [tbphp/gpt-load](https://github.com/tbphp/gpt-load) | 「分组 + 凭据池」模型；权重调度、失败冷却、会话亲和、请求日志 |
 | [BerriAI/litellm](https://github.com/BerriAI/litellm) | 双协议入口（OpenAI + Anthropic）与协议归一 |
-| [E:\ai-work2\LoomyProxy](../LoomyProxy) | 同款工程结构（`src/{auth,core,upstream,routes}` + CLI 四件套 + REA 取证文档） |
+| 上述项目的工程结构 | `src/{auth,core,upstream,routes}` 分层 + CLI 四件套 + REA 取证文档 |
 
 **Today 特有的两个难点**（别家没有）：
 
